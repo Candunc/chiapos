@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) try {
     string id = "022fb42c08c12de3a6af053880199806532e79515f94e83461612101f9412f9e";
     bool nobitfield = false;
     bool show_progress = false;
+    bool json_progress = false;
     uint32_t buffmegabytes = 0;
 
     options.allow_unrecognised_options().add_options()(
@@ -102,6 +103,8 @@ int main(int argc, char *argv[]) try {
         cxxopts::value<uint32_t>(buffmegabytes))(
         "p, progress", "Display progress percentage during plotting",
         cxxopts::value<bool>(show_progress))(
+        "j, json", "Format output as JSON-parsable data",
+        cxxopts::value<bool>(json_progress))(
         "help", "Print help");
 
     auto result = options.parse(argc, argv);
@@ -141,6 +144,9 @@ int main(int argc, char *argv[]) try {
         }
         if (show_progress) {
             phases_flags = phases_flags | SHOW_PROGRESS;
+        }
+        if (json_progress) {
+            phases_flags = phases_flags | JSON_PROGRESS;
         }
         plotter.CreatePlotDisk(
                 tempdir,

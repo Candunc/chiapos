@@ -100,6 +100,16 @@ public:
         return ctime(&tt);  // ctime includes newline
     }
 
+    static char *GetNowISO8601()
+    {
+       auto now = std::chrono::system_clock::now();
+        auto tt = std::chrono::system_clock::to_time_t(now);
+
+        char buffer[21];
+        strftime(buffer, sizeof buffer, "%FT%TZ", gmtime(&tt));
+        return buffer;
+    }
+
     void PrintElapsed(const std::string &name) const
     {
         auto end = std::chrono::steady_clock::now();

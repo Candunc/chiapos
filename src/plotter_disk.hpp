@@ -73,6 +73,9 @@ public:
         uint8_t num_threads_input = 0,
         uint8_t phases_flags = ENABLE_BITFIELD)
     {
+        // 
+        bool json_formatting = phases_flags & JSON_PROGRESS;
+
         // Increases the open file limit, we will open a lot of files.
 #ifndef _WIN32
         struct rlimit the_limit = {600, 600};
@@ -155,17 +158,29 @@ public:
         }
 #endif /* defined(_WIN32) || defined(__x86_64__) */
 
-        std::cout << std::endl
-                  << "Starting plotting progress into temporary dirs: " << tmp_dirname << " and "
-                  << tmp2_dirname << std::endl;
-        std::cout << "ID: " << Util::HexStr(id, id_len) << std::endl;
-        std::cout << "Plot size is: " << static_cast<int>(k) << std::endl;
-        std::cout << "Buffer size is: " << buf_megabytes << "MiB" << std::endl;
-        std::cout << "Using " << num_buckets << " buckets" << std::endl;
-        std::cout << "Final Directory is: " << final_dirname << std::endl;
-        std::cout << "Using " << (int)num_threads << " threads of stripe size " << stripe_size
-                  << std::endl;
-        std::cout << "Process ID is: " << ::getpid() << std::endl;
+        if (json_formatting == 0) {
+            std::cout << std::endl
+                      << "Starting plotting progress into temporary dirs: " << tmp_dirname << " and "
+                      << tmp2_dirname << std::endl;
+            std::cout << "ID: " << Util::HexStr(id, id_len) << std::endl;
+            std::cout << "Plot size is: " << static_cast<int>(k) << std::endl;
+            std::cout << "Buffer size is: " << buf_megabytes << "MiB" << std::endl;
+            std::cout << "Using " << num_buckets << " buckets" << std::endl;
+            std::cout << "Final Directory is: " << final_dirname << std::endl;
+            std::cout << "Using " << (int)num_threads << " threads of stripe size " << stripe_size
+                      << std::endl;
+            std::cout << "Process ID is: " << ::getpid() << std::endl;
+        } else {
+            std::cout << "{\"data\": {\"time\": \"" << Timer::GetNowISO8601() << "\", \"phase\": 0, \"bucket\": 0, \"format\": 0, \"info\": {"
+                      << "\"id\": \"" << Util::HexStr(id, id_len) << "\","
+                      << "\"plot_size\": \"" << static_cast<int>(k) << ","
+                      << "\"buffer_size\": " << buf_megabytes << "\","
+                      << "\"buckets\": " << num_buckets << ","
+                      << "\"dir_tmp\": \"" << tmp_dirname << "\","
+                      << "\"dir_tmp2\": \"" << tmp2_dirname << "\","
+                      << "\"dir_final\": \"" << final_dirname << "\"" 
+                      << "\"}}}" << std::endl;
+        }
 
         // Cross platform way to concatenate paths, gulrak library.
         std::vector<fs::path> tmp_1_filenames = std::vector<fs::path>();
@@ -212,9 +227,11 @@ public:
 
             assert(id_len == kIdLen);
 
-            std::cout << std::endl
-                      << "Starting phase 1/4: Forward Propagation into tmp files... "
-                      << Timer::GetNow();
+            if (json_formatting == 0) {
+                std::cout << std::endl
+                          << "Starting phase 1/4: Forward Propagation into tmp files... "
+                          << Timer::GetNow();
+            }
 
             Timer p1;
             Timer all_phases;
@@ -230,7 +247,10 @@ public:
                 stripe_size,
                 num_threads,
                 phases_flags);
-            p1.PrintElapsed("Time for phase 1 =");
+
+            if (json_formatting == 0) {
+                p1.PrintElapsed("Time for phase 1 =");
+            }
 
             uint64_t finalsize=0;
 
@@ -290,9 +310,11 @@ public:
                 finalsize = res.final_table_begin_pointers[11];
             }
             else {
-                std::cout << std::endl
-                      << "Starting phase 2/4: Backpropagation into tmp files... "
-                      << Timer::GetNow();
+                if (json_formatting == 0) {
+                    std::cout << std::endl
+                          << "Starting phase 2/4: Backpropagation into tmp files... "
+                          << Timer::GetNow();
+                }
 
                 Timer p2;
                 Phase2Results res2 = RunPhase2(
@@ -473,7 +495,7 @@ private:
 
         uint32_t bytes_written =
             header_text.size() + kIdLen + 1 + 2 + kFormatDescription.size() + 2 + memo_len + 10 * 8;
-        std::cout << "Wrote: " << bytes_written << std::endl;
+            std::cout << "Wrote: " << bytes_written << std::endl;
         return bytes_written;
     }
 };
